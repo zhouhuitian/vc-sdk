@@ -1,6 +1,7 @@
 use std::time::SystemTime;
 
 use codec::Encode;
+use sp_core::{sr25519, Pair};
 use vc_sdk::{
     api_client_patch::{
         batch_all::BatchPatch, event::SubscribeEventPatch, parachain::ParachainPatch,
@@ -28,7 +29,6 @@ use vc_sdk::{
     vc_management::{events::VCIssuedEvent, VcManagementApi},
     ApiClient,
 };
-use sp_core::{sr25519, Pair};
 
 /**
  * Including the corner case of everything

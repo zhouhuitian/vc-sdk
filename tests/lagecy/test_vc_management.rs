@@ -1,3 +1,5 @@
+use sp_core::{sr25519, Pair};
+use std::time::SystemTime;
 use vc_sdk::{
     api_client_patch::{
         batch_all::BatchPatch, event::SubscribeEventPatch, parachain::ParachainPatch,
@@ -12,8 +14,6 @@ use vc_sdk::{
     },
     ApiClient,
 };
-use sp_core::{sr25519, Pair};
-use std::time::SystemTime;
 
 // #[test]
 // fn tc_request_vc_all_works() {

@@ -1,3 +1,4 @@
+use sp_core::{sr25519, Pair};
 use vc_sdk::{
     api_client_patch::{event::SubscribeEventPatch, parachain::ParachainPatch},
     identity_management::{events::IdentityCreatedEvent, IdentityManagementApi},
@@ -11,7 +12,6 @@ use vc_sdk::{
     },
     ApiClient,
 };
-use sp_core::{sr25519, Pair};
 
 #[test]
 fn tc_sidechain_rpc_methods_works() {

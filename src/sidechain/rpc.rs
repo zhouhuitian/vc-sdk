@@ -3,8 +3,9 @@ use openssl::ssl::{SslConnector, SslMethod, SslStream, SslVerifyMode};
 use serde_json::Value;
 use std::fmt::Debug;
 use std::sync::mpsc::{channel, Sender as ThreadOut};
-use substrate_api_client::rpc::{ws_client::RpcMessage, RpcClientError};
-use substrate_api_client::ApiResult;
+use substrate_api_client::api::Result as ApiResult;
+use substrate_api_client::rpc::ws_client::RpcMessage;
+
 use ws::{
     connect, util::TcpStream, CloseCode, Handler, Handshake, Message, Result as WsResult, Sender,
 };
@@ -39,13 +40,13 @@ impl SidechainHandleMessage for GetSidechainRequestHandler {
         // let result_str = serde_json::from_str(msg.as_text()?)
         // 	.map(|v: serde_json::Value| Some(v["result"].to_string()))
         // 	.map_err(RpcClientError::Serde);
-        let result_str = serde_json::from_str(msg.as_text()?)
-            .map(|v: serde_json::Value| Some(v.to_string()))
-            .map_err(RpcClientError::Serde);
+        let result_str =
+            serde_json::from_str(msg.as_text()?).map(|v: serde_json::Value| Some(v.to_string()));
 
-        result
-            .send(result_str)
-            .map_err(|e| Box::new(RpcClientError::Send(format!("{:?}", e))).into())
+        // result
+        //     .send(result_str).unwrap();
+
+        Ok(())
     }
 }
 
@@ -132,8 +133,10 @@ impl SidechainRpcClient {
             request: jsonreq.clone(),
             result: result_in.clone(),
             message_handler: message_handler.clone(),
-        })?;
-        Ok(result_out.recv()?)
+        })
+        .unwrap();
+
+        Ok(result_out.recv().unwrap())
     }
 }
 
@@ -142,8 +145,6 @@ pub trait SidechainRpcClientTrait {
 }
 impl SidechainRpcClientTrait for SidechainRpcClient {
     fn request(&self, jsonreq: Value) -> ApiResult<String> {
-        Ok(self
-            .direct_rpc_request(jsonreq.to_string(), GetSidechainRequestHandler::default())??
-            .unwrap_or_default())
+        Ok(self.direct_rpc_request(jsonreq.to_string(), GetSidechainRequestHandler::default())??)
     }
 }

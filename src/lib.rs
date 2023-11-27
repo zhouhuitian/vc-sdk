@@ -13,10 +13,23 @@ pub mod sidechain;
 pub mod utils;
 pub mod vc_management;
 
+use std::marker::PhantomData;
+
+use codec::Encode;
 use sidechain::rpc::SidechainRpcClient;
-use sp_core::{crypto::AccountId32 as AccountId, Pair};
-use sp_runtime::{MultiSignature, MultiSigner};
-use substrate_api_client::{rpc::WsRpcClient, Api, ApiResult, PlainTipExtrinsicParams, XtStatus};
+use sp_core::{crypto::AccountId32 as AccountId, sr25519};
+use sp_runtime::MultiAddress;
+use substrate_api_client::{
+    ac_primitives::{
+        Config, DefaultRuntimeConfig, ExtrinsicParams, ExtrinsicSigner, SignExtrinsic,
+        UncheckedExtrinsicV4,
+    },
+    api::Result as ApiResult,
+    rpc::JsonrpseeClient,
+    Api, SubmitAndWatch, XtStatus,
+};
+
+pub type Address = MultiAddress<AccountId, ()>;
 
 #[cfg(feature = "local")]
 const NODE_URL: &str = "ws://127.0.0.1:9944";
@@ -39,52 +52,68 @@ const NODE_URL: &str = "ws://127.0.0.1:9944";
 #[cfg(not(any(feature = "local", feature = "staging", feature = "prod2")))]
 const WORKER_URL: &str = "wss://localhost:2000";
 
-pub type ApiType<P> = Api<P, WsRpcClient, PlainTipExtrinsicParams>;
-
-#[derive(Clone)]
-pub struct ApiClient<P>
+pub struct ApiClient<T>
 where
-    P: Pair,
+    T: Config,
 {
-    pub api: ApiType<P>,
+    pub api: Api<DefaultRuntimeConfig, JsonrpseeClient>,
     pub sidechain: SidechainRpcClient,
+    phantom: PhantomData<T>,
 }
 
-impl<P> ApiClient<P>
+impl<T> ApiClient<T>
 where
-    P: Pair,
-    MultiSignature: From<P::Signature>,
-    MultiSigner: From<P::Public>,
+    T: Config,
 {
-    pub fn new_with_signer(signer: P) -> ApiResult<Self> {
-        let client = WsRpcClient::new(NODE_URL);
-        let api = ApiType::new(client).map(|api| api.set_signer(signer))?;
+    pub fn new_with_signer(signer: sr25519::Pair) -> ApiResult<Self> {
+        let client = JsonrpseeClient::new(NODE_URL)?;
+        let mut api = Api::<DefaultRuntimeConfig, JsonrpseeClient>::new(client)?;
+
+        let signer = ExtrinsicSigner::new(signer);
+        api.set_signer(signer);
 
         let sidechain = SidechainRpcClient::new(WORKER_URL);
 
         println!("[+] Parachain rpc : {}", NODE_URL);
         println!("[+] Sidechain rpc : {}", WORKER_URL);
 
-        Ok(ApiClient { api, sidechain })
+        Ok(ApiClient {
+            api,
+            sidechain,
+            phantom: PhantomData,
+        })
     }
 
-    pub fn get_signer(&self) -> Option<AccountId> {
-        self.api.signer_account()
+    pub fn get_signer(&self) -> Option<&T::AccountId> {
+        // self.api.signer_account()
+        todo!()
     }
+}
 
-    pub fn send_extrinsic(&self, xthex_prefixed: String) {
-        match self.api.send_extrinsic(xthex_prefixed, XtStatus::InBlock) {
-            Ok(tx_hash) => match tx_hash {
-                Some(tx_hash) => {
-                    println!(" ✅ Transaction got included. Hash: {:?}", tx_hash);
-                }
-                None => {
-                    println!(" ❌ Transaction None");
-                }
-            },
-            Err(e) => {
-                println!(" ❌ Transaction error : {:?}", e);
-            }
+pub trait SendExtrinsic {
+    type Extrinsic<Call>;
+
+    fn send_extrinsic<Call: Encode + Clone>(&self, extrinsic: Self::Extrinsic<Call>);
+}
+
+impl<T> SendExtrinsic for ApiClient<T>
+where
+    T: Config,
+{
+    type Extrinsic<Call> = UncheckedExtrinsicV4<
+        <T::ExtrinsicSigner as SignExtrinsic<T::AccountId>>::ExtrinsicAddress,
+        Call,
+        <T::ExtrinsicSigner as SignExtrinsic<T::AccountId>>::Signature,
+        <T::ExtrinsicParams as ExtrinsicParams<T::Index, T::Hash>>::SignedExtra,
+    >;
+
+    fn send_extrinsic<Call: Encode + Clone>(&self, extrinsic: Self::Extrinsic<Call>) {
+        match self
+            .api
+            .submit_and_watch_extrinsic_until(extrinsic, XtStatus::InBlock)
+        {
+            Ok(tx_hash) => println!(" ✅ Transaction got included. Hash: {:?}", tx_hash),
+            Err(e) => println!(" ❌ Transaction error : {:?}", e),
         }
     }
 }

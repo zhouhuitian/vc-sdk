@@ -16,6 +16,7 @@ Priority:
 
 use std::str::FromStr;
 
+use sp_core::{sr25519, Pair, H256};
 use vc_sdk::{
     api_client_patch::{
         batch_all::BatchPatch, event::SubscribeEventPatch, parachain::ParachainPatch,
@@ -34,7 +35,6 @@ use vc_sdk::{
     },
     ApiClient,
 };
-use sp_core::{sr25519, Pair, H256};
 
 #[test]
 fn alpha_function_name_should_be_descriptive_and_clear_works() {
@@ -58,7 +58,7 @@ fn alpha_request_vc_a1_works() {
     let event = api_client.wait_event::<VCIssuedEvent>();
     assert!(event.is_ok());
     let event = event.unwrap();
-    assert_eq!(event.account, api_client.get_signer().unwrap());
+    assert_eq!(event.account, api_client.api.signer_account().unwrap());
 
     let vc = decrypt_vc_with_user_shielding_key(&user_shielding_key, event.vc);
     assert!(vc.is_ok());

@@ -2,7 +2,7 @@ use super::IDENTITY_PALLET_NAME;
 use crate::primitives::{crypto::AesOutput, vc::ErrorDetail, AccountId};
 use codec::Decode;
 use sp_core::H256;
-use substrate_api_client::StaticEvent;
+use substrate_api_client::ac_node_api::StaticEvent;
 
 /// UserShieldingKeySet
 #[derive(Decode, Debug, PartialEq, Eq)]

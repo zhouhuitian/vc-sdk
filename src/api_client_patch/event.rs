@@ -1,7 +1,5 @@
-use sp_core::Pair;
-use sp_runtime::{MultiSignature, MultiSigner};
 use std::sync::mpsc::channel;
-use substrate_api_client::{ApiClientError, ApiResult, Error, Events, FromHexString, StaticEvent};
+use substrate_api_client::{api::Error as ApiClientError, api::Result as ApiResult, Error, ac_node_api::{Events, StaticEvent}, ac_primitives::Config, SubscribeEvents};
 
 use crate::ApiClient;
 
@@ -16,15 +14,11 @@ pub trait SubscribeEventPatch {
     fn wait_error<EventType: StaticEvent>(&self) -> ApiResult<EventType>;
 }
 
-impl<P> SubscribeEventPatch for ApiClient<P>
-where
-    P: Pair,
-    MultiSignature: From<P::Signature>,
-    MultiSigner: From<P::Public>,
+impl<T: Config> SubscribeEventPatch for ApiClient<T>
 {
     fn wait_event<EventType: StaticEvent>(&self) -> ApiResult<EventType> {
         let (events_in, events_out) = channel();
-        self.api.subscribe_events(events_in)?;
+        self.api.subscribe_events()?;
 
         let event: ApiResult<EventType> = self.api.wait_for_event(&events_out);
         event
@@ -32,7 +26,7 @@ where
 
     fn wait_events<EventType: StaticEvent>(&self, target_num: usize) -> ApiResult<Vec<EventType>> {
         let (events_in, events_out) = channel();
-        self.api.subscribe_events(events_in)?;
+        self.api.subscribe_events()?;
 
         let mut collected_events = vec![];
         loop {
@@ -42,7 +36,7 @@ where
 
             let events_str = events_out.recv()?;
             let event_bytes = Vec::from_hex(events_str)?;
-            let events = Events::new(self.api.metadata.clone(), Default::default(), event_bytes);
+            let events = Events::new(self.api.metadata().clone(), Default::default(), event_bytes);
 
             for maybe_event_details in events.iter() {
                 let event_details = maybe_event_details?;

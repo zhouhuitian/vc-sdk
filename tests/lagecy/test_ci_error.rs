@@ -1,3 +1,5 @@
+use sp_core::{sr25519, Pair};
+use sp_runtime::BoundedVec;
 /**
  * Including the verification of CI errors
  *
@@ -21,8 +23,6 @@ use vc_sdk::{
     utils::{address::public_to_address32, crypto::generate_user_shielding_key, print_passed},
     ApiClient,
 };
-use sp_core::{sr25519, Pair};
-use sp_runtime::BoundedVec;
 
 /*
 CI ERROR： lit_batch_test

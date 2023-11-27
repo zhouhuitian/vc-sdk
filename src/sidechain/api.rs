@@ -4,17 +4,12 @@ use crate::primitives::crypto::{DirectRequestStatus, RpcReturnValue, RsaPublicKe
 use crate::utils::hex::FromHexPrefixed;
 use crate::{sidechain::json_resp, ApiClient};
 use codec::{Decode, Error as CodecError};
+use frame_metadata::RuntimeMetadataPrefixed;
 use rsa::RsaPublicKey;
-use sp_core::Pair;
-use sp_runtime::{MultiSignature, MultiSigner};
-use substrate_api_client::{ApiResult, DecodeError, Error as ApiError, RuntimeMetadataPrefixed};
+use substrate_api_client::ac_primitives::Config;
+use substrate_api_client::{api::Result as ApiResult, Error as ApiError};
 
-impl<P> SidechainRpc for ApiClient<P>
-where
-    P: Pair,
-    MultiSignature: From<P::Signature>,
-    MultiSigner: From<P::Public>,
-{
+impl<T: Config> SidechainRpc for ApiClient<T> {
     /*
     supported rpc methods:
     [
@@ -91,13 +86,13 @@ where
         let resp = self.sidechain.request(jsonreq)?;
         let rpc_response = json_resp(resp)?;
         let rpc_return_value = RpcReturnValue::from_hex(&rpc_response.result)
-            .map_err(|e| ApiError::Other(format!("{:?}", e)))?;
+            .map_err(|e| ApiError::Other(format!("{:?}", e).into()))?;
 
         Ok(
             RuntimeMetadataPrefixed::decode(&mut rpc_return_value.value.as_slice()).map_err(
-                |_| {
+                |e| {
                     let error = CodecError::from("Decode RuntimeMetadataPrefixed error");
-                    ApiError::DecodeValue(DecodeError::CodecError(error))
+                    ApiError::Codec(error)
                 },
             )?,
         )
@@ -118,7 +113,9 @@ where
         let shielding_pubkey_string = decode_from_rpc_response(&resp)?;
         Ok(
             RsaPublicKey::new_with_rsa3072_pubkey(shielding_pubkey_string.as_bytes().to_vec())
-                .map_err(|e| ApiError::Other(format!("Get author shielding key error: {:?}", e)))?,
+                .map_err(|e| {
+                    ApiError::Other(format!("Get author shielding key error: {:?}", e).into())
+                })?,
         )
     }
 
@@ -137,12 +134,12 @@ where
         let rpc_response = json_resp(resp)?;
 
         let rpc_return_value = RpcReturnValue::from_hex(&rpc_response.result)
-            .map_err(|e| ApiError::Other(format!("{:?}", e)))?;
+            .map_err(|e| ApiError::Other(format!("{:?}", e).into()))?;
 
         Ok(
             Vec::<Vec<Vec<u8>>>::decode(&mut rpc_return_value.value.as_slice()).map_err(|_| {
                 let error = CodecError::from("Decode RuntimeMetadataPrefixed error");
-                ApiError::DecodeValue(DecodeError::CodecError(error))
+                ApiError::Codec(error)
             })?,
         )
     }
@@ -161,7 +158,7 @@ where
         let rpc_response = json_resp(resp)?;
 
         let rpc_return_value = RpcReturnValue::from_hex(&rpc_response.result)
-            .map_err(|e| ApiError::Other(format!("{:?}", e)))?;
+            .map_err(|e| ApiError::Other(format!("{:?}", e).into()))?;
         match rpc_return_value.status {
             DirectRequestStatus::Ok => Ok(rpc_return_value.value),
             _ => Ok(Default::default()),

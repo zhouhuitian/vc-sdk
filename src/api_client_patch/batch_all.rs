@@ -1,40 +1,85 @@
-use codec::Encode;
-use sp_core::Pair;
-use sp_runtime::{MultiSignature, MultiSigner};
-use substrate_api_client::{
-    compose_extrinsic, extrinsic::common::Batch, CallIndex, PlainTip, SubstrateDefaultSignedExtra,
+/*
+   Copyright 2019 Supercomputing Systems AG
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+*/
+
+//! Extrinsics for `pallet-utility`.
+//! https://polkadot.js.org/docs/substrate/extrinsics/#utility
+
+use codec::{Decode, Encode};
+use substrate_api_client::ac_compose_macros::compose_extrinsic;
+use substrate_api_client::ac_primitives::{
+    config::Config, extrinsic_params::ExtrinsicParams, extrinsics::CallIndex, SignExtrinsic,
     UncheckedExtrinsicV4,
 };
-
-use crate::ApiClient;
-
-pub trait BatchPatch {
-    fn batch_all<Call: Encode + Clone>(
-        &self,
-        calls: &[Call],
-    ) -> UtilityBatchAllXt<Call, SubstrateDefaultSignedExtra<PlainTip>>;
-}
+use substrate_api_client::{rpc::Request, Api};
 
 const UTILITY_MODULE: &str = "Utility";
-const UTILITY_BATCH_ALL: &str = "batch_all";
+const BATCH: &str = "batch";
+const FORCE_BATCH: &str = "force_batch";
 
-pub type UtilityBatchAllFn<Call> = (CallIndex, Batch<Call>);
-pub type UtilityBatchAllXt<Call, SignedExtra> =
-    UncheckedExtrinsicV4<UtilityBatchAllFn<Call>, SignedExtra>;
+#[derive(Clone, Eq, PartialEq, Encode, Decode, Debug)]
+pub struct Batch<Call> {
+    pub calls: Vec<Call>,
+}
 
-impl<P> BatchPatch for ApiClient<P>
-where
-    P: Pair,
-    MultiSignature: From<P::Signature>,
-    MultiSigner: From<P::Public>,
-{
-    fn batch_all<Call: Encode + Clone>(
+pub type BatchCall<Call> = (CallIndex, Batch<Call>);
+
+#[maybe_async::maybe_async(?Send)]
+pub trait UtilityExtrinsics {
+    type Extrinsic<Call>;
+
+    // Send a batch of dispatch calls.
+    async fn batch_all<Call: Encode + Clone>(
         &self,
-        calls: &[Call],
-    ) -> UtilityBatchAllXt<Call, SubstrateDefaultSignedExtra<PlainTip>> {
-        let calls = Batch {
-            calls: calls.to_vec(),
-        };
-        compose_extrinsic!(self.api.clone(), UTILITY_MODULE, UTILITY_BATCH_ALL, calls)
+        calls: Vec<Call>,
+    ) -> Self::Extrinsic<BatchCall<Call>>;
+
+    // Send a batch of dispatch calls. Unlike batch, it allows errors and won't interrupt.
+    async fn force_batch<Call: Encode + Clone>(
+        &self,
+        calls: Vec<Call>,
+    ) -> Self::Extrinsic<BatchCall<Call>>;
+}
+
+#[maybe_async::maybe_async(?Send)]
+impl<T, Client> UtilityExtrinsics for Api<T, Client>
+where
+    T: Config,
+    Client: Request,
+{
+    type Extrinsic<Call> = UncheckedExtrinsicV4<
+        <T::ExtrinsicSigner as SignExtrinsic<T::AccountId>>::ExtrinsicAddress,
+        Call,
+        <T::ExtrinsicSigner as SignExtrinsic<T::AccountId>>::Signature,
+        <T::ExtrinsicParams as ExtrinsicParams<T::Index, T::Hash>>::SignedExtra,
+    >;
+
+    async fn batch_all<Call: Encode + Clone>(
+        &self,
+        calls: Vec<Call>,
+    ) -> Self::Extrinsic<BatchCall<Call>> {
+        let calls = Batch { calls };
+        compose_extrinsic!(self, UTILITY_MODULE, BATCH, calls)
+    }
+
+    async fn force_batch<Call: Encode + Clone>(
+        &self,
+        calls: Vec<Call>,
+    ) -> Self::Extrinsic<BatchCall<Call>> {
+        let calls = Batch { calls };
+        compose_extrinsic!(self, UTILITY_MODULE, FORCE_BATCH, calls)
     }
 }

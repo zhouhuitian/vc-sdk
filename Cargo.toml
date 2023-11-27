@@ -10,12 +10,12 @@ description = "Litentry parachain api client."
 [dependencies]
 substrate-api-client = { features = [
   "ws-client",
-], git = "https://github.com/scs/substrate-api-client.git", branch = "polkadot-v0.9.39-tag-v0.7.0" }
-sp-core = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
-codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = [
+], git = "https://github.com/scs/substrate-api-client.git", branch = "polkadot-v0.9.42-tag-v0.14.0" }
+sp-core = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.42" }
+codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = [
   'derive',
 ] }
-scale-info = { version = "2.4.0", default-features = false, features = [
+scale-info = { version = "2.1.1", default-features = false, features = [
   "derive",
 ] }
 aes-gcm = { git = "https://github.com/RustCrypto/AEADs", default-features = false, features = [
@@ -32,7 +32,7 @@ sha2 = { version = "0.10.2" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 hex = { version = "0.4", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.39", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.42", default-features = false }
 jsonschema = { version = "0.16.0", default-features = false, features = [
   "draft202012",
 ] }
@@ -49,6 +49,13 @@ itertools = "0.10.5"
 env_logger = "0.10.0"
 strum = { version = "0.25.0", default-features = false }
 strum_macros = { version = "0.25.0", default-features = false }
+frame-metadata = { version = "15.1", default-features = false, features = [
+  "v14",
+  "v15-unstable",
+  "serde_full",
+  "decode",
+] }
+maybe-async = "0.2.7"
 
 # [build-dependencies]
 [target.'cfg(unix)'.build-dependencies]

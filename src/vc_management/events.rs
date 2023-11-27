@@ -3,11 +3,12 @@ use crate::primitives::{
     assertion::Assertion, crypto::AesOutput, vc::ErrorDetail, AccountId, VCIndex,
 };
 use codec::Decode;
+use scale_info::TypeInfo;
 use sp_core::H256;
-use substrate_api_client::StaticEvent;
+use substrate_api_client::ac_node_api::StaticEvent;
 
 /// VCIssuedEvent
-#[derive(Decode, Debug, PartialEq, Eq)]
+#[derive(Decode, Debug, PartialEq, Eq, TypeInfo)]
 pub struct VCIssuedEvent {
     pub account: AccountId,
     pub assertion: Assertion,

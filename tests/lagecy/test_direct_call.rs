@@ -1,3 +1,4 @@
+use sp_core::{sr25519, Pair};
 use vc_sdk::{
     api_client_patch::parachain::ParachainPatch,
     direct_call::{
@@ -12,7 +13,6 @@ use vc_sdk::{
     },
     ApiClient,
 };
-use sp_core::{sr25519, Pair};
 
 #[test]
 fn tc_di_set_user_shielding_key_works() {

@@ -1,39 +1,27 @@
 use crate::{
-    api_client_patch::parachain::ParachainPatch,
     identity_management::xtbuilder::IdentityManagementXtBuilder,
     primitives::{address::Address32, identity::Identity, identity::ValidationData, MrEnclave},
-    utils::crypto::encrypt_with_tee_shielding_pubkey,
-    ApiClient,
+    ApiClient, SendExtrinsic,
 };
-use sp_core::Pair;
-use sp_runtime::{MultiSignature, MultiSigner};
-use substrate_api_client::ApiResult;
+use substrate_api_client::ac_primitives::Config;
+use substrate_api_client::ac_primitives::{ExtrinsicParams, SignExtrinsic, UncheckedExtrinsicV4};
 
 use super::IdentityManagementApi;
 
-impl<P> IdentityManagementApi for ApiClient<P>
+impl<T> IdentityManagementApi for ApiClient<T>
 where
-    P: Pair,
-    MultiSignature: From<P::Signature>,
-    MultiSigner: From<P::Public>,
+    T: Config,
 {
-    fn set_user_shielding_key(
-        &self,
-        shard: &MrEnclave,
-        user_shielding_key: &[u8],
-    ) -> ApiResult<()> {
-        let tee_shielding_pubkey = self.get_tee_shielding_pubkey()?;
-        let encrpted_shielding_key =
-            encrypt_with_tee_shielding_pubkey(&tee_shielding_pubkey, user_shielding_key);
-        let xt = self.build_extrinsic_set_user_shielding_key(shard, &encrpted_shielding_key);
-        self.send_extrinsic(xt.hex_encode());
-
-        Ok(())
-    }
+    type Extrinsic<Call> = UncheckedExtrinsicV4<
+        <T::ExtrinsicSigner as SignExtrinsic<T::AccountId>>::ExtrinsicAddress,
+        Call,
+        <T::ExtrinsicSigner as SignExtrinsic<T::AccountId>>::Signature,
+        <T::ExtrinsicParams as ExtrinsicParams<T::Index, T::Hash>>::SignedExtra,
+    >;
 
     fn add_delegatee(&self, account: &Address32) {
         let xt = self.build_extrinsic_add_delegatee(account);
-        self.send_extrinsic(xt.hex_encode());
+        self.send_extrinsic(xt);
     }
 
     fn create_identity(
@@ -45,7 +33,7 @@ where
     ) {
         let xt =
             self.build_extrinsic_create_identity(shard, address, identity, ciphertext_metadata);
-        self.send_extrinsic(xt.hex_encode());
+        self.send_extrinsic(xt);
     }
 
     fn create_identity_offline(
@@ -63,16 +51,16 @@ where
             identity,
             ciphertext_metadata,
         );
-        self.send_extrinsic(xt.hex_encode());
+        self.send_extrinsic(xt);
     }
 
     fn remove_identity(&self, shard: &MrEnclave, identity: &Identity) {
         let xt = self.build_extrinsic_remove_identity(shard, identity);
-        self.send_extrinsic(xt.hex_encode());
+        self.send_extrinsic(xt);
     }
 
     fn verify_identity(&self, shard: &MrEnclave, identity: &Identity, vdata: &ValidationData) {
         let xt = self.build_extrinsic_verify_identity(shard, identity, vdata);
-        self.send_extrinsic(xt.hex_encode());
+        self.send_extrinsic(xt);
     }
 }

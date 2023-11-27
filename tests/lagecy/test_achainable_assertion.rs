@@ -1,3 +1,4 @@
+use sp_core::{sr25519, Pair};
 use vc_sdk::{
     api_client_patch::parachain::ParachainPatch,
     identity_management::IdentityManagementApi,
@@ -9,7 +10,6 @@ use vc_sdk::{
     vc_management::VcManagementApi,
     ApiClient,
 };
-use sp_core::{sr25519, Pair};
 
 #[test]
 fn tc_achainable_class_of_year_works() {

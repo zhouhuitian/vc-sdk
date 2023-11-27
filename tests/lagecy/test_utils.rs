@@ -1,4 +1,5 @@
 use codec::Encode;
+use sp_core::{sr25519, Pair};
 use vc_sdk::{
     primitives::address::Address32,
     utils::{
@@ -10,7 +11,6 @@ use vc_sdk::{
         enclave::mock_a_shard,
     },
 };
-use sp_core::{sr25519, Pair};
 
 #[cfg(target_arch = "x86_64")]
 use vc_sdk::ra::{SafeSgx, SafeSgxApi};

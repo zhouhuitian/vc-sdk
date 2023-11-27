@@ -1,3 +1,4 @@
+use sp_core::{sr25519, Pair};
 use vc_sdk::{
     api_client_patch::{event::SubscribeEventPatch, parachain::ParachainPatch},
     identity_management::{
@@ -28,7 +29,6 @@ use vc_sdk::{
     },
     ApiClient,
 };
-use sp_core::{sr25519, Pair};
 
 #[test]
 fn tc_set_user_shielding_key_works() {

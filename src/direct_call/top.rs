@@ -6,16 +6,14 @@ use crate::sidechain::SidechainResp;
 use crate::utils::crypto::encrypt_with_tee_shielding_pubkey;
 use crate::utils::hex::ToHexPrefixed;
 use crate::ApiClient;
-use crate::MultiSignature;
-use crate::MultiSigner;
-use crate::Pair;
 use sp_core::{Decode, Encode};
-use substrate_api_client::AccountId;
-use substrate_api_client::ApiResult;
+use substrate_api_client::ac_primitives::Config;
+use substrate_api_client::api::Result as ApiResult;
 
 use super::primitives::Getter;
 use super::primitives::PublicGetter;
 use super::primitives::TrustedGetterSigned;
+use super::types::AccountId;
 
 #[derive(Encode, Decode, Clone, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
@@ -73,12 +71,7 @@ pub trait DirectCall {
     fn di_request(&self, operation_call: &TrustedOperation) -> ApiResult<SidechainResp>;
 }
 
-impl<P> DirectCall for ApiClient<P>
-where
-    P: Pair,
-    MultiSignature: From<P::Signature>,
-    MultiSigner: From<P::Public>,
-{
+impl<T: Config> DirectCall for ApiClient<T> {
     fn send_request_di(&self, top: &TrustedOperation) -> ApiResult<SidechainResp> {
         match top {
             TrustedOperation::get(getter) => self.getter_request(getter),

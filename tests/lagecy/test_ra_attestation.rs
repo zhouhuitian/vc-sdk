@@ -1,9 +1,9 @@
+use sp_core::{sr25519, Pair};
 use vc_sdk::{
     api_client_patch::parachain::ParachainPatch,
     ra::{RaAttestation, RaAttestationExecutor},
     ApiClient,
 };
-use sp_core::{sr25519, Pair};
 
 #[test]
 fn tc_ra_attestation_works() {

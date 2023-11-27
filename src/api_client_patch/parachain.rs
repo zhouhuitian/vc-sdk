@@ -9,9 +9,10 @@ use crate::{
     ApiClient,
 };
 use rsa::RsaPublicKey;
-use sp_core::{ed25519::Public as Ed25519Public, hexdisplay::HexDisplay, Pair};
-use sp_runtime::{MultiSignature, MultiSigner};
-use substrate_api_client::{ApiClientError, ApiResult};
+use sp_core::{ed25519::Public as Ed25519Public, hexdisplay::HexDisplay};
+use substrate_api_client::{
+    ac_primitives::Config, api::Error as ApiClientError, api::Result as ApiResult, GetStorage,
+};
 
 pub const TEEREX_STORAGE_PREFIX_NAME: &str = "Teerex";
 
@@ -28,12 +29,7 @@ pub trait ParachainPatch {
     fn get_vc_context(&self, vc_index: &VCIndex) -> ApiResult<Option<VCContext>>;
 }
 
-impl<P> ParachainPatch for ApiClient<P>
-where
-    P: Pair,
-    MultiSignature: From<P::Signature>,
-    MultiSigner: From<P::Public>,
-{
+impl<T: Config> ParachainPatch for ApiClient<T> {
     /**
      * pallet IdentityManagement Apis
      */
@@ -47,7 +43,7 @@ where
      */
     fn enclave_count(&self) -> ApiResult<Option<u64>> {
         self.api
-            .get_storage_value(TEEREX_STORAGE_PREFIX_NAME, "EnclaveCount", None)
+            .get_storage(TEEREX_STORAGE_PREFIX_NAME, "EnclaveCount", None)
     }
 
     fn enclave(&self, enclave_count: u64) -> ApiResult<Option<Enclave<AccountId, String>>> {

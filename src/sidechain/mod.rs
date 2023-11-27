@@ -1,9 +1,10 @@
 use codec::Error as CodecError;
 use codec::{Decode, Encode};
+use frame_metadata::RuntimeMetadataPrefixed;
 use rsa::RsaPublicKey;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use substrate_api_client::{std::error::Error as ApiError, ApiResult, RuntimeMetadataPrefixed};
+use substrate_api_client::{api::Error as ApiError, api::Result as ApiResult};
 
 use crate::primitives::{address::Address32, identity::Identity};
 use crate::{
@@ -78,7 +79,7 @@ pub fn json_req<S: Serialize>(method: &str, params: S, id: u32) -> Value {
 }
 
 pub fn json_resp(resp: String) -> ApiResult<SidechainResp> {
-    let resp: SidechainResp = serde_json::from_str(&resp)?;
+    let resp: SidechainResp = serde_json::from_str(&resp).unwrap();
     Ok(resp)
 }
 
@@ -109,10 +110,10 @@ impl RpcRequest {
 }
 
 fn decode_from_rpc_response(json_rpc_response: &str) -> ApiResult<String> {
-    let rpc_response: SidechainResp = serde_json::from_str(json_rpc_response)?;
+    let rpc_response: SidechainResp = serde_json::from_str(json_rpc_response).unwrap();
     let rpc_return_value = RpcReturnValue::from_hex(&rpc_response.result).map_err(|_| {
         let x = hex::FromHexError::OddLength;
-        ApiError::InvalidHexString(x)
+        ApiError::Other(x.into())
     })?;
 
     let response_message = String::decode(&mut rpc_return_value.value.as_slice())?;
@@ -120,7 +121,7 @@ fn decode_from_rpc_response(json_rpc_response: &str) -> ApiResult<String> {
         DirectRequestStatus::Ok => Ok(response_message),
         _ => {
             let error = CodecError::from("Decode error.");
-            Err(ApiError::NodeApi(substrate_api_client::Error::Codec(error)))
+            Err(ApiError::Codec(error))
         }
     }
 }
