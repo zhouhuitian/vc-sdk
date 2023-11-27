@@ -91,6 +91,7 @@ impl<T: Config> DirectCall for ApiClient<T> {
             cyphertext: operation_call_encrypted,
         };
 
+        // author_submitVCRequest
         use crate::sidechain::json_req;
         let jsonreq = json_req("author_submitAndWatchExtrinsic", vec![request.to_hex()], 1);
 

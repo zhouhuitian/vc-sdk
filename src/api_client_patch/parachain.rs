@@ -99,12 +99,13 @@ impl<T: Config> ParachainPatch for ApiClient<T> {
     /// TODO:
     /// But there's a question, what's the difference betwwen `mrenclave` and `shard`?
     fn get_shard(&self) -> ApiResult<MrEnclave> {
-        let enclave_count: Option<u64> = self.enclave_count()?;
-        let enclave_count = enclave_count.ok_or_else(|| {
+        let enclave_count = self.enclave_count()?.ok_or_else(|| {
             ApiClientError::Other("[+] get enclave count error".to_string().into())
         })?;
 
         let enclave: Option<Enclave<AccountId, String>> = self.enclave(enclave_count)?;
+        // println!("Current enclave : {:?}", enclave);
+
         let enclave = enclave
             .ok_or_else(|| ApiClientError::Other("[+] get enclave error".to_string().into()))?;
 

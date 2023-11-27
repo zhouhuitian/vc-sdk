@@ -25,38 +25,33 @@ use substrate_api_client::{
         UncheckedExtrinsicV4,
     },
     api::Result as ApiResult,
-    rpc::JsonrpseeClient,
+    rpc::{JsonrpseeClient, WsRpcClient},
     Api, SubmitAndWatch, XtStatus,
 };
 
 pub type Address = MultiAddress<AccountId, ()>;
 
-#[cfg(feature = "local")]
-const NODE_URL: &str = "ws://127.0.0.1:9944";
-#[cfg(feature = "local")]
-const WORKER_URL: &str = "wss://localhost:2000";
-
-#[cfg(feature = "staging")]
-const NODE_URL: &str = "wss://tee-staging.litentry.io:443";
-#[cfg(feature = "staging")]
-const WORKER_URL: &str = "wss://tee-staging.litentry.io:2000";
-
-#[cfg(feature = "prod2")]
-const NODE_URL: &str = "wss://tee-internal.litentry.io:443";
-#[cfg(feature = "prod2")]
-const WORKER_URL: &str = "wss://tee-internal.litentry.io:2000";
+// #[cfg(feature = "local")]
+// const NODE_URL: &str = "ws://127.0.0.1:9944";
+// #[cfg(feature = "local")]
+// const WORKER_URL: &str = "wss://localhost:2000";
 
 // Default to `local` worker mode when no cargo features are set.
-#[cfg(not(any(feature = "local", feature = "staging", feature = "prod2")))]
-const NODE_URL: &str = "ws://127.0.0.1:9944";
-#[cfg(not(any(feature = "local", feature = "staging", feature = "prod2")))]
-const WORKER_URL: &str = "wss://localhost:2000";
+// #[cfg(not(any(feature = "local", feature = "staging", feature = "prod2")))]
+// const NODE_URL: &str = "ws://127.0.0.1:9944";
+// #[cfg(not(any(feature = "local", feature = "staging", feature = "prod2")))]
+// const WORKER_URL: &str = "wss://localhost:2000";
+
+pub struct EnpointConfig {
+    pub parachain_endpoint: String,
+    pub worker_endpoint: String,
+}
 
 pub struct ApiClient<T>
 where
     T: Config,
 {
-    pub api: Api<DefaultRuntimeConfig, JsonrpseeClient>,
+    pub api: Api<DefaultRuntimeConfig, WsRpcClient>,
     pub sidechain: SidechainRpcClient,
     phantom: PhantomData<T>,
 }
@@ -66,16 +61,19 @@ where
     T: Config,
 {
     pub fn new_with_signer(signer: sr25519::Pair) -> ApiResult<Self> {
-        let client = JsonrpseeClient::new(NODE_URL)?;
-        let mut api = Api::<DefaultRuntimeConfig, JsonrpseeClient>::new(client)?;
+        let t_u = "wss://tee-internal.litentry.io:443";
+        let t_x = "wss://tee-internal.litentry.io:2000";
+
+        let client = WsRpcClient::new(t_u)?;
+        let mut api = Api::<DefaultRuntimeConfig, WsRpcClient>::new(client)?;
 
         let signer = ExtrinsicSigner::new(signer);
         api.set_signer(signer);
 
-        let sidechain = SidechainRpcClient::new(WORKER_URL);
+        let sidechain = SidechainRpcClient::new(t_x);
 
-        println!("[+] Parachain rpc : {}", NODE_URL);
-        println!("[+] Sidechain rpc : {}", WORKER_URL);
+        println!("[+] Parachain rpc : {}", t_u);
+        println!("[+] Sidechain rpc : {}", t_x);
 
         Ok(ApiClient {
             api,

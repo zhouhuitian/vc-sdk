@@ -61,7 +61,7 @@ impl<MessageHandler: SidechainHandleMessage> Handler
     for SidechainClient<MessageHandler, MessageHandler::ThreadMessage>
 {
     fn on_open(&mut self, _: Handshake) -> WsResult<()> {
-        info!("sending request: {}", self.request);
+        println!("sending request: {}", self.request);
         self.out.send(self.request.clone())?;
         Ok(())
     }
@@ -127,6 +127,9 @@ impl SidechainRpcClient {
         MessageHandler: SidechainHandleMessage + Clone + Send + 'static,
         MessageHandler::ThreadMessage: Send + Sync + Debug,
     {
+        println!(">>> jsonreq: {:?}", jsonreq);
+        println!("self.url: {}", self.url);
+
         let (result_in, result_out) = channel();
         connect(self.url.as_str(), |out| SidechainClient {
             out,
